@@ -8,7 +8,7 @@ import numpy as np
 import plotly.graph_objects as go
 
 # Loading model
-model, feature_names = joblib.load("Heart_Disease_Project\ui\heart_model.pkl")
+model, feature_names = joblib.load("Heart_Disease_Project/ui/heart_model.pkl")
 
 # User interface 
 st.set_page_config(page_title="Initial check up for heart diseases", layout="centered")
