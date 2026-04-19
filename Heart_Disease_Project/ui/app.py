@@ -38,49 +38,27 @@ with col2:
     exang = st.selectbox("Exercise Angina (1:Y, 0:N)", [0, 1])
 
 if st.button("Predict"):
-    input_data = {
+    input_df = pd.DataFrame([{
         "thal": thal, "ca": ca, "slope": slope, "thalach": thalach,
         "exang": exang, "sex": sex, "oldpeak": oldpeak, "cp": cp, "age": age
-    }
-    input_df = pd.DataFrame([input_data])[feature_names]
+    }])[feature_names]
 
     proba = model.predict_proba(input_df)
-    percent_sick = proba[0][1] * 100  
-    
-    fig_gauge = go.Figure(go.Indicator(
-        mode="gauge+number",
-        value=percent_sick,
-        number={'suffix': "%", 'font': {'size': 60}},
-        title={'text': "Heart Disease Risk Level (%)"},
-        gauge={
-            'axis': {'range': [0, 100]},
-            'bar': {'color': "white"}, 
-            'steps': [
-                {'range': [0, 30], 'color': "#00ff00"},    
-                {'range': [30, 70], 'color': "#ffff00"},  
-                {'range': [70, 100], 'color': "#ff0000"}  
-            ],
-            'threshold': {
-                'line': {'color': "black", 'width': 4},
-                'thickness': 0.75,
-                'value': percent_sick
-            }
-        }
-    ))
-    st.plotly_chart(fig_gauge)
+    percent_sick = proba[0][1] * 100 
+    percent_safe = 100 - percent_sick
 
     if percent_sick > 50:
         st.error(f"High Risk Detected: {percent_sick:.2f}%")
     else:
-        st.success(f"Low Risk Score: {percent_safe:.2f}%")
+        st.success(f"Low Risk Score: {percent_safe:.2f}% safe")
 
     fig_gauge = go.Figure(go.Indicator(
         mode="gauge+number",
         value=percent_sick,
-        number={'suffix': "%", 'font': {'size': 60}},   
+        number={'suffix': "%", 'font': {'size': 60}},
         title={'text': "Heart Disease Risk Level", 'font': {'size': 24}},
         gauge={
-            'axis': {'range': [0, 100], 'ticksuffix': "%"}, 
+            'axis': {'range': [0, 100], 'ticksuffix': "%"},
             'bar': {'color': "white"}, 
             'steps': [
                 {'range': [0, 30], 'color': "#00ff00"},
@@ -92,40 +70,35 @@ if st.button("Predict"):
     st.plotly_chart(fig_gauge)
 
     st.write("---")
-    st.subheader("🔍 Feature Importance Analysis")
+    st.subheader("🔍 Why this result? (Features Impact)")
 
     try:
-        with st.spinner('Deep Analysis...'):
-            f = lambda x: model.predict_proba(pd.DataFrame(x, columns=feature_names))
-            explainer = shap.KernelExplainer(f, input_df.values)
-            raw_sv = explainer.shap_values(input_df.values, nsamples=200)
+        with st.spinner('Calculating impact... this may take a moment.'):
+            def predict_fn(x):
+                return model.predict_proba(x)[:, 1] 
 
-            if isinstance(raw_sv, list):
-                sv = np.array(raw_sv[1]).flatten() if len(raw_sv) > 1 else np.array(raw_sv[0]).flatten()
+            explainer = shap.KernelExplainer(predict_fn, shap.sample(input_df, 1)) 
+            sv = explainer.shap_values(input_df, nsamples=100)
+
+            sv_flat = sv.flatten()
+            impact_df = pd.DataFrame({'Feature': feature_names, 'Impact': sv_flat})
+
+            max_val = np.abs(impact_df['Impact']).max()
+            if max_val < 1e-5: 
+                st.info("The factors are perfectly balanced for this case.")
             else:
-                sv = np.array(raw_sv).flatten()
+                impact_df['Impact'] = impact_df['Impact'] / max_val 
+                impact_df = impact_df.sort_values(by='Impact')
 
-            impact_df = pd.DataFrame({'Feature': feature_names, 'Impact': sv})
-            
-            max_abs_impact = np.abs(impact_df['Impact']).max()
-            if max_abs_impact < 0.1 and max_abs_impact > 0:
-                scale_factor = 0.5 / max_abs_impact
-                impact_df['Impact'] = impact_df['Impact'] * scale_factor
-                st.caption(f"Note: Visual impact bars scaled for clarity.")
-
-            impact_df = impact_df.sort_values(by='Impact')
-
-            fig_impact = px.bar(
-                impact_df, x='Impact', y='Feature', orientation='h',
-                color='Impact',
-                color_continuous_scale='RdBu_r',
-                template='plotly_dark'
-            )
-            
-            limit = max(abs(impact_df['Impact']).max(), 0.001) * 1.2
-            fig_impact.update_layout(xaxis=dict(range=[-limit, limit], zeroline=True))
-            
-            st.plotly_chart(fig_impact, use_container_width=True)
+                fig_impact = px.bar(
+                    impact_df, x='Impact', y='Feature', orientation='h',
+                    color='Impact',
+                    color_continuous_scale='RdBu_r',
+                    labels={'Impact': 'Relative Influence (Scaled)', 'Feature': 'Factor'},
+                    template='plotly_dark'
+                )
+                fig_impact.update_layout(xaxis=dict(range=[-1.2, 1.2], zeroline=True))
+                st.plotly_chart(fig_impact, use_container_width=True)
 
     except Exception as e:
-        st.warning(f"Note: Analysis visualization is recalculating. Prediction: {percent_sick:.2f}%")
+        st.warning("Analysis visualization is loading... Click predict again if it persists.")
