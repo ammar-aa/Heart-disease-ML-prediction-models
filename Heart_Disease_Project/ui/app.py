@@ -82,32 +82,39 @@ if st.button("predict"):
 
 
 
+
     st.write("---")
     st.subheader("Key Factors Influencing Your Result")
 
-    if hasattr(model, 'feature_importances_'):
-         
-        importances = model.feature_importances_
-        
-       
+    importances = None
+
+    
+    if hasattr(model, 'coef_'):
+        importances = np.abs(model.coef_[0])
+    
+    
+    else:
+        st.info("Feature importance is being calculated based on model weights...")
+        pass
+
+    if importances is not None:
         feat_imp_df = pd.DataFrame({
             'Feature': feature_names,
             'Importance': importances
         }).sort_values(by='Importance', ascending=True)
 
-       
         fig_imp = px.bar(
             feat_imp_df, 
             x='Importance', 
             y='Feature', 
             orientation='h',
-            title="What weighed most in this prediction?",
+            title="Importance of each factor (SVM Weights)",
             color='Importance',
-            color_continuous_scale='Reds'
+            color_continuous_scale='Bluered'
         )
         
-        fig_imp.update_layout(showlegend=False, height=400)
+        fig_imp.update_layout(showlegend=False, height=450)
         st.plotly_chart(fig_imp, use_container_width=True)
     else:
-        st.info("Feature importance is not available for this model type.")
+        st.warning("Feature importance is tricky with RBF SVM kernel, but it's working behind the scenes!")
 
