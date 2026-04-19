@@ -6,7 +6,8 @@ import plotly.colors as pc
 import matplotlib.cm as cm
 import numpy as np
 import plotly.graph_objects as go
-
+import shap
+import streamlit.components.v1 as components
 
 model, feature_names = joblib.load("Heart_Disease_Project/ui/heart_model.pkl")
 
@@ -83,8 +84,7 @@ if st.button("predict"):
 
 
 
-   import shap
-import streamlit.components.v1 as components
+
 
 st.write("---")
 st.subheader("Deep Analysis: Why this result?")
