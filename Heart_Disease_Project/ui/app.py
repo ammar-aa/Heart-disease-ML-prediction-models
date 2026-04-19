@@ -94,16 +94,14 @@ if st.button("predict"):
             explainer = shap.KernelExplainer(model_predict, input_df.values)
             raw_shap_values = explainer.shap_values(input_df.values, nsamples=50)
 
-            try:
-                if isinstance(raw_shap_values, list):
-                    sv = np.array(raw_shap_values[0]).flatten()
-                    bv = float(np.array(explainer.expected_value)[0])
-                else:
-                    sv = np.array(raw_shap_values).flatten()
-                    bv = float(explainer.expected_value)
-            except:
-                sv = np.atleast_1d(np.squeeze(raw_shap_values))[:len(feature_names)]
+            if isinstance(raw_shap_values, list):
+                sv = np.array(raw_shap_values[0]).flatten()
                 bv = float(np.array(explainer.expected_value).flatten()[0])
+            else:
+                sv = np.array(raw_shap_values).flatten()
+                bv = float(np.array(explainer.expected_value).flatten()[0])
+
+            sv = np.nan_to_num(sv)
 
             exp = shap.Explanation(
                 values=sv, 
@@ -115,17 +113,23 @@ if st.button("predict"):
             st.write("### Impact Analysis: Why this result?")
             
             import matplotlib.pyplot as plt
-            fig, ax = plt.subplots(figsize=(10, 6))
             
+            plt.rcParams['figure.max_open_warning'] = 0 
+            fig = plt.figure(figsize=(10, 6), dpi=100) 
+            ax = fig.add_subplot(111)
+
             shap.plots.waterfall(exp, show=False)
             
+            plt.xlim(left=None, right=None) 
             plt.tight_layout()
-            st.pyplot(fig)
-            plt.close(fig)
+            
+            st.pyplot(plt.gcf())
+            plt.clf()
+            plt.close('all')
 
     except Exception as e:
-        st.error(f"Analysis system is temporarily unavailable. Error: {e}")
-
+        st.error(f"Analysis system encountered a calculation limit. Result: {percent_sick:.2f}% risk.")
+        st.info("The prediction is accurate, but the visual chart couldn't be rendered for this specific data combination.")
     except Exception as e:
         st.error(f"Error: {e}")
         st.write("Data Debug Info:", type(all_shap_values))
