@@ -16,10 +16,10 @@ st.title("ML model predict diseases based on data")
 st.write("Enter your data:")
 
 # Patient data
-age = st.number_input("Age", 35, 110, 50)
+age = st.number_input("Age", 1, 120, 30)
 sex = st.selectbox("Sex: Male=1, Female=0", [0,1])
-thalach = st.number_input("Maximum heart rate achieved during exercise", 60, 220, 120)
-oldpeak = st.number_input("ST depression induced by exercise relative to rest", 0.0, 6.5, 1.0)
+thalach = st.number_input("Maximum heart rate achieved during exercise", 40, 220, 150)
+oldpeak = st.number_input("ST depression induced by exercise relative to rest", 0.0, 7.0, 0.0)
 ca = st.slider("Number of major vessels (0-3) colored by fluoroscopy", 0, 3, 0)
 exang = st.selectbox("Exercise induced angina: 1=Yes, 0=No", [0,1])
 cp = st.selectbox("Chest pain type: 0=Typical angina, 1=Atypical angina, 2=Non-anginal pain, 3=Asymptomatic", [0,1,2,3])
