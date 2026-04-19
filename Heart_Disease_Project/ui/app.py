@@ -87,37 +87,25 @@ if st.button("predict"):
 
     try:
         with st.spinner('Calculating impact... This takes a moment for SVM models.'):
-            # 1. الدالة الوسيطة للهروب من مشاكل الـ Pipeline
             def model_predict(data):
                 temp_df = pd.DataFrame(data, columns=feature_names)
                 return model.predict_proba(temp_df)
 
-            # 2. تعريف الـ Explainer
             explainer = shap.KernelExplainer(model_predict, input_df.values)
             
-            # 3. حساب قيم SHAP (المصفوفة الكبيرة)
-            # ملحوظة: nsamples=100 بتسرع العملية شوية لو السيرفر بطيء
             all_shap_values = explainer.shap_values(input_df.values, nsamples=100)
             
-            # 4. استخراج القيم يدوياً لحل مشكلة الـ Indexing
-            # الموديل بيطلع احتمالات لفئتين (0 و 1)
-            # سنختار الفئة 0 (غالباً هي المرض)
             class_idx = 0 
             
             if isinstance(all_shap_values, list):
-                # لو راجع قائمة مصفوفات (وهو الأرجح)
                 sv = all_shap_values[class_idx]
                 bv = explainer.expected_value[class_idx]
             else:
-                # لو راجع مصفوفة واحدة ثلاثية الأبعاد
                 sv = all_shap_values[:, :, class_idx]
                 bv = explainer.expected_value[class_idx]
 
             st.write("How each factor pushed the probability:")
             
-            # 5. رسم الـ Force Plot (هنا بنمرر المعاملات يدوياً بالترتيب المطلوب)
-            # bv هو الـ Base Value (أول باراميتر)
-            # sv هو الـ SHAP values (تاني باراميتر)
             p = shap.force_plot(
                 bv, 
                 sv, 
@@ -125,7 +113,6 @@ if st.button("predict"):
                 link="logit" 
             )
             
-            # عرض الرسمة في ستريم ليت
             shap_html = f"<head>{shap.getjs()}</head><body>{p.html()}</body>"
             components.html(shap_html, height=200)
             
