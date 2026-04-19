@@ -107,26 +107,32 @@ if st.button("predict"):
 
             st.write("### 📊 Features Impact Analysis")
             
+            max_val = max(abs(impact_df['Impact'].max()), abs(impact_df['Impact'].min()))
+            limit = max_val * 1.2 if max_val > 0 else 0.1
+
             fig_impact = px.bar(
                 impact_df, 
                 x='Impact', 
                 y='Feature', 
                 orientation='h',
                 color='Impact',
-                color_continuous_scale=['#0000ff', '#ffffff', '#ff0000'], 
+                color_continuous_scale=['#0000ff', '#ffffff', '#ff0000'],
                 color_continuous_midpoint=0,
-                labels={'Impact': 'Influence on Prediction'},
+                range_x=[-limit, limit], 
+                labels={'Impact': 'Influence Strength'},
                 template='plotly_dark'
             )
 
             fig_impact.update_layout(
                 showlegend=False,
                 height=500,
-                xaxis_title="Influence Score (Strength of Factor)",
-                yaxis_title="Medical Features",
-                xaxis=dict(autorange=True, zeroline=True, zerolinewidth=2, zerolinecolor='White'),
-                margin=dict(l=20, r=20, t=30, b=20),
-                template='plotly_dark'
+                xaxis=dict(
+                    tickformat=".4f",  
+                    zeroline=True, 
+                    zerolinewidth=2, 
+                    zerolinecolor='White'
+                ),
+                margin=dict(l=20, r=20, t=30, b=20)
             )
 
             fig_impact.update_traces(
@@ -136,6 +142,5 @@ if st.button("predict"):
             )
             
             st.plotly_chart(fig_impact, use_container_width=True)
-
     except Exception as e:
         st.error(f"Visual analysis unavailable, but prediction is ready: {percent_sick:.2f}%")
