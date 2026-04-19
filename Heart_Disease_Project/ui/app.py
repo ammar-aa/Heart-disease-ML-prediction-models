@@ -44,8 +44,9 @@ if st.button("Predict"):
     }])[feature_names]
 
     proba = model.predict_proba(input_df)
-    percent_sick = proba[0][1] * 100 
-    percent_safe = 100 - percent_sick
+    
+    percent_sick = proba[0][1] * 100  
+    percent_safe = proba[0][0] * 100
 
     if percent_sick > 50:
         st.error(f"High Risk Detected: {percent_sick:.2f}%")
@@ -54,7 +55,7 @@ if st.button("Predict"):
 
     fig_gauge = go.Figure(go.Indicator(
         mode="gauge+number",
-        value=percent_sick,
+        value=percent_sick, 
         number={'suffix': "%", 'font': {'size': 60}},
         title={'text': "Heart Disease Risk Level", 'font': {'size': 24}},
         gauge={
@@ -68,39 +69,3 @@ if st.button("Predict"):
         }
     ))
     st.plotly_chart(fig_gauge)
-
-    st.write("---")
-    st.subheader("🔍 Why this result? (Features Impact)")
-
-    try:
-        with st.spinner('🔍 Analyzing feature impacts...'):
-            def predict_proba_fn(x):
-                temp_df = pd.DataFrame(x, columns=feature_names)
-                return model.predict_proba(temp_df)[:, 1] 
-
-            explainer = shap.Explainer(predict_proba_fn, input_df)
-            shap_values = explainer(input_df)
-
-            sv = shap_values.values[0] 
-            
-            impact_df = pd.DataFrame({'Feature': feature_names, 'Impact': sv})
-
-            max_val = np.abs(impact_df['Impact']).max()
-            if max_val < 1e-6:
-                st.info("The factors are very balanced. Try changing inputs like 'Oldpeak' or 'Age' to see changes.")
-            else:
-                impact_df['Impact'] = impact_df['Impact'] / max_val
-                impact_df = impact_df.sort_values(by='Impact')
-
-                fig_impact = px.bar(
-                    impact_df, x='Impact', y='Feature', orientation='h',
-                    color='Impact',
-                    color_continuous_scale='RdBu_r',
-                    labels={'Impact': 'Relative Influence', 'Feature': 'Medical Factor'},
-                    template='plotly_dark'
-                )
-                fig_impact.update_layout(xaxis=dict(range=[-1.2, 1.2], zeroline=True))
-                st.plotly_chart(fig_impact, use_container_width=True)
-
-    except Exception as e:
-        st.error(f"Analysis detail: {e}")
