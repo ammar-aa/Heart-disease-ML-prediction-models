@@ -85,37 +85,45 @@ if st.button("predict"):
     st.write("---")
     st.subheader("Deep Analysis: Why this result?")
 
-    try:
-    
-        with st.spinner('Calculating impact of each factor... This may take a few seconds.'):
+  try:
+        with st.spinner('Calculating impact... This takes a moment for SVM models.'):
             
-            explainer = shap.KernelExplainer(model.predict_proba, input_df)
-            shap_values = explainer.shap_values(input_df)
-        
             
-            idx_to_plot = 0 
+            explainer = shap.KernelExplainer(model.predict_proba, input_df.values)
             
-            st.write("The following chart shows how each factor pushed the probability:")
+      
+            shap_values = explainer.shap_values(input_df.values)
             
+            
+            class_idx = 0 
+            
+            if isinstance(shap_values, list):
+                current_shap_values = shap_values[class_idx][0]
+                base_value = explainer.expected_value[class_idx]
+            else:
+                current_shap_values = shap_values[0]
+                base_value = explainer.expected_value
+
+            st.write("How each factor pushed the probability:")
+            
+         
             p = shap.force_plot(
-                explainer.expected_value[idx_to_plot], 
-                shap_values[idx_to_plot][0] if isinstance(shap_values, list) else shap_values[0], 
-                input_df,
+                base_value, 
+                current_shap_values, 
+                input_df, 
                 link="logit"
             )
             
-            
             shap_html = f"<head>{shap.getjs()}</head><body>{p.html()}</body>"
-            components.html(shap_html, height=150)
+            components.html(shap_html, height=200)
             
             st.info("""
             **How to read this?**
-            - **Red bars (Right):** Factors pushing towards a "Sick" prediction.
-            - **Blue bars (Left):** Factors pushing towards a "Safe" prediction.
-            - The values on the bars show your actual input.
+            - **Red:** Increases the risk score.
+            - **Blue:** Decreases the risk score.
             """)
 
     except Exception as e:
-        st.error(f"Could not calculate SHAP values: {e}")
+        st.error(f"Analysis Error: {e}")
 
 
