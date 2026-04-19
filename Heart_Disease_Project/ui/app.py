@@ -55,7 +55,7 @@ if st.button("Predict"):
 
     fig_gauge = go.Figure(go.Indicator(
         mode="gauge+number",
-        value=percent_sick, 
+        value=percent_sick,  
         number={'suffix': "%", 'font': {'size': 60}},
         title={'text': "Heart Disease Risk Level", 'font': {'size': 24}},
         gauge={
