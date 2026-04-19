@@ -81,9 +81,6 @@ if st.button("predict"):
 
     st.plotly_chart(fig_gauge)
 
-
-    st.plotly_chart(fig_gauge)
-
     
     st.write("---")
     st.subheader("Deep Analysis: Why this result?")
