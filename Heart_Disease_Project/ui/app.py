@@ -11,82 +11,61 @@ import streamlit.components.v1 as components
 
 model, feature_names = joblib.load("Heart_Disease_Project/ui/heart_model.pkl")
 
+st.set_page_config(page_title="Heart Disease Diagnostic Tool", layout="centered")
+st.title("AI Heart Disease Prediction & Analysis")
+st.write("Enter patient data to see the risk assessment and key factors:")
 
-st.set_page_config(page_title="Initial check up for heart diseases", layout="centered")
-st.title("ML model predict diseases based on data")
-st.write("Enter your data:")
+col1, col2 = st.columns(2)
+with col1:
+    age = st.number_input("Age", 1, 120, 30)
+    sex = st.selectbox("Sex: Male=1, Female=0", [0,1])
+    thalach = st.number_input("Max Heart Rate (thalach)", 40, 220, 150)
+    oldpeak = st.number_input("ST Depression (oldpeak)", 0.0, 7.0, 0.0)
 
+with col2:
+    ca = st.slider("Major Vessels (ca)", 0, 3, 0)
+    exang = st.selectbox("Exercise Angina: 1=Yes, 0=No", [0,1])
+    cp = st.selectbox("Chest Pain Type (0-3)", [0,1,2,3])
+    thal = st.selectbox("Thalassemia (1-3)", [0,1,2,3])
 
-age = st.number_input("Age", 1, 120, 30)
-sex = st.selectbox("Sex: Male=1, Female=0", [0,1])
-thalach = st.number_input("Maximum heart rate achieved during exercise", 40, 220, 150)
-oldpeak = st.number_input("ST depression induced by exercise relative to rest", 0.0, 7.0, 0.0)
-ca = st.slider("Number of major vessels (0-3) colored by fluoroscopy", 0, 3, 0)
-exang = st.selectbox("Exercise induced angina: 1=Yes, 0=No", [0,1])
-cp = st.selectbox("Chest pain type: 0=Typical angina, 1=Atypical angina, 2=Non-anginal pain, 3=Asymptomatic", [0,1,2,3])
-thal = st.selectbox("Thalassemia test result: 1=Normal, 2=Fixed defect, 3=Reversible defect", [0,1,2,3])
-slope = st.selectbox("Slope of the peak exercise ST segment: 0=Upsloping, 1=Flat, 2=Downsloping", [0,1,2])
+slope = st.selectbox("ST Segment Slope (0-2)", [0,1,2])
 
-
-if st.button("predict"):
+if st.button("Predict & Analyze"):
     input_df = pd.DataFrame([{
-        "thal": thal,
-        "ca": ca, 
-        "slope": slope,
-        "thalach": thalach,
-        "exang": exang,
-        "sex": sex,
-        "oldpeak": oldpeak,
-        "cp": cp,
-        "age": age
+        "thal": thal, "ca": ca, "slope": slope, "thalach": thalach,
+        "exang": exang, "sex": sex, "oldpeak": oldpeak, "cp": cp, "age": age
     }])
     input_df = input_df[feature_names]
 
-    
-    pred = model.predict(input_df)
     proba = model.predict_proba(input_df)
     percent_safe = proba[0][1] * 100
     percent_sick = proba[0][0] * 100
 
     if percent_sick > 50:
-        st.error(f"You have {percent_sick:.2f}% chance of being a heart patient")
+        st.error(f"High Risk: {percent_sick:.2f}% probability of heart disease.")
         predicted_value = percent_sick 
     else:
-        st.success(f"You are {percent_safe:.2f}% safe from heart diseases")
+        st.success(f"Low Risk: {percent_safe:.2f}% safe from heart disease.")
         predicted_value = percent_sick 
      
     n_colors = 1000
     cmap = cm.get_cmap('jet', n_colors)
-    colors = []
-    for i in range(n_colors):
-        r,g,b,a = cmap(i/n_colors)
-        r,g,b = int(r*255), int(g*255), int(b*255)
-        colors.append(f'rgb({r},{g},{b})')
+    colors = [f'rgb({int(cmap(i/n_colors)[0]*255)},{int(cmap(i/n_colors)[1]*255)},{int(cmap(i/n_colors)[2]*255)})' for i in range(n_colors)]
     ranges = np.linspace(0, predicted_value, n_colors+1)
     steps = [{'range':[ranges[i], ranges[i+1]], 'color': colors[i]} for i in range(n_colors)]
 
- 
     fig_gauge = go.Figure(go.Indicator(
-        mode="gauge+number",
-        value=predicted_value,
-        title={'text': "Danger of getting sick (%)"},
-        gauge={
-            'axis': {'range':[0,100], 'tickcolor':'white'},
-            'bgcolor':'black',
-            'bar': {'color':'black','thickness':0},
-            'steps': steps,
-            'borderwidth': 0 
-        }
+        mode="gauge+number", value=predicted_value,
+        title={'text': "Danger Score (%)"},
+        gauge={'axis': {'range':[0,100]}, 'bar': {'color':'black','thickness':0}, 'steps': steps}
     ))
-
     st.plotly_chart(fig_gauge)
 
-    
     st.write("---")
     st.subheader("Deep Analysis: Why this result?")
 
     try:
-        with st.spinner('Analyzing features impact...'):
+        with st.spinner('Calculating impact of each factor...'):
             def model_predict(data):
                 return model.predict_proba(pd.DataFrame(data, columns=feature_names))
 
@@ -105,42 +84,36 @@ if st.button("predict"):
                 'Impact': sv
             }).sort_values(by='Impact', ascending=True)
 
-            st.write("### 📊 Features Impact Analysis")
-            
             max_val = max(abs(impact_df['Impact'].max()), abs(impact_df['Impact'].min()))
-            limit = max_val * 1.2 if max_val > 0 else 0.1
+            limit = max_val * 1.3 if max_val > 0 else 0.1
 
             fig_impact = px.bar(
-                impact_df, 
-                x='Impact', 
-                y='Feature', 
-                orientation='h',
+                impact_df, x='Impact', y='Feature', orientation='h',
                 color='Impact',
                 color_continuous_scale=['#0000ff', '#ffffff', '#ff0000'],
                 color_continuous_midpoint=0,
                 range_x=[-limit, limit], 
-                labels={'Impact': 'Influence Strength'},
+                labels={'Impact': 'Strength of Influence'},
                 template='plotly_dark'
             )
 
             fig_impact.update_layout(
-                showlegend=False,
-                height=500,
-                xaxis=dict(
-                    tickformat=".4f",  
-                    zeroline=True, 
-                    zerolinewidth=2, 
-                    zerolinecolor='White'
-                ),
+                showlegend=False, height=500,
+                xaxis=dict(tickformat=".4f", zeroline=True, zerolinewidth=2, zerolinecolor='White'),
                 margin=dict(l=20, r=20, t=30, b=20)
             )
 
             fig_impact.update_traces(
-                texttemplate='%{x:.4f}', 
-                textposition='outside',
-                cliponaxis=False
+                texttemplate='%{x:.4f}', textposition='outside', cliponaxis=False
             )
             
             st.plotly_chart(fig_impact, use_container_width=True)
+            
+            st.info("""
+            **Reading the Chart:**
+            - **Red (Right):** Increases risk.
+            - **Blue (Left):** Decreases risk (Protective).
+            """)
+
     except Exception as e:
-        st.error(f"Visual analysis unavailable, but prediction is ready: {percent_sick:.2f}%")
+        st.warning("Visual breakdown unavailable. Prediction remains accurate.")
