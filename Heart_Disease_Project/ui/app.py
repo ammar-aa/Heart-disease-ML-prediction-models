@@ -86,7 +86,7 @@ if st.button("predict"):
     st.subheader("Deep Analysis: Why this result?")
 
     try:
-        with st.spinner('Calculating impact... This takes a moment for SVM models.'):
+        with st.spinner('Calculating impact... This takes a moment.'):
             def model_predict(data):
                 temp_df = pd.DataFrame(data, columns=feature_names)
                 return model.predict_proba(temp_df)
@@ -94,29 +94,29 @@ if st.button("predict"):
             explainer = shap.KernelExplainer(model_predict, input_df.values)
             all_shap_values = explainer.shap_values(input_df.values, nsamples=100)
             
-            class_idx = 0 
             
-            if isinstance(all_shap_values, list):
-                sv = np.array(all_shap_values[class_idx]).flatten()
-                expected_val = explainer.expected_value[class_idx]
-            else:
+            if isinstance(all_shap_values, list) and len(all_shap_values) > 0:
                 sv = np.array(all_shap_values[0]).flatten()
-                expected_val = explainer.expected_value
-
-            if isinstance(expected_val, (np.ndarray, list)):
-                final_bv = float(expected_val.flatten()[0])
             else:
-                final_bv = float(expected_val)
+                sv = np.array(all_shap_values).flatten()
+
+            ev = explainer.expected_value
+            if isinstance(ev, (list, np.ndarray)):
+                final_bv = float(ev[0])
+            else:
+                final_bv = float(ev)
 
             st.write("### Impact Analysis (Why this result?)")
 
             import matplotlib.pyplot as plt
             fig, ax = plt.subplots(figsize=(10, 6))
             
+            f_names = feature_names.tolist() if hasattr(feature_names, 'tolist') else list(feature_names)
+
             shap.plots._waterfall.waterfall_legacy(
                 final_bv, 
                 sv, 
-                feature_names=feature_names.tolist() if hasattr(feature_names, 'tolist') else feature_names,
+                feature_names=f_names,
                 max_display=10,
                 show=False
             )
@@ -127,9 +127,9 @@ if st.button("predict"):
 
             st.info("""
             **How to read this chart:**
-            - **Red bars (Right):** Factors that increased the disease probability.
-            - **Blue bars (Left):** Factors that decreased the risk.
+            - **Red bars:** Increased the risk.
+            - **Blue bars:** Decreased the risk.
             """)
 
     except Exception as e:
-        st.error(f"Analysis Error: {e}")
+        st.error(f"Analysis Error Details: {e}")
