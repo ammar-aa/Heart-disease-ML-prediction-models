@@ -7,15 +7,15 @@ import matplotlib.cm as cm
 import numpy as np
 import plotly.graph_objects as go
 
-# Loading model
+
 model, feature_names = joblib.load("Heart_Disease_Project/ui/heart_model.pkl")
 
-# User interface 
+
 st.set_page_config(page_title="Initial check up for heart diseases", layout="centered")
 st.title("ML model predict diseases based on data")
 st.write("Enter your data:")
 
-# Patient data
+
 age = st.number_input("Age", 1, 120, 30)
 sex = st.selectbox("Sex: Male=1, Female=0", [0,1])
 thalach = st.number_input("Maximum heart rate achieved during exercise", 40, 220, 150)
@@ -26,7 +26,7 @@ cp = st.selectbox("Chest pain type: 0=Typical angina, 1=Atypical angina, 2=Non-a
 thal = st.selectbox("Thalassemia test result: 1=Normal, 2=Fixed defect, 3=Reversible defect", [0,1,2,3])
 slope = st.selectbox("Slope of the peak exercise ST segment: 0=Upsloping, 1=Flat, 2=Downsloping", [0,1,2])
 
-# Prediction button
+
 if st.button("predict"):
     input_df = pd.DataFrame([{
         "thal": thal,
@@ -41,7 +41,7 @@ if st.button("predict"):
     }])
     input_df = input_df[feature_names]
 
-    # Prediction
+    
     pred = model.predict(input_df)
     proba = model.predict_proba(input_df)
     percent_safe = proba[0][1] * 100
@@ -49,11 +49,11 @@ if st.button("predict"):
 
     if percent_sick > 50:
         st.error(f"You have {percent_sick:.2f}% chance of being a heart patient")
-        predicted_value = percent_sick # عشان الـ Gauge يقرأ نسبة المرض
+        predicted_value = percent_sick 
     else:
         st.success(f"You are {percent_safe:.2f}% safe from heart diseases")
-        predicted_value = percent_sick # برضه خليه يقرأ نسبة المرض عشان الـ Gauge يفضل منطقي
-    # gauge meter for sickness percentage
+        predicted_value = percent_sick 
+     
     n_colors = 1000
     cmap = cm.get_cmap('jet', n_colors)
     colors = []
@@ -64,7 +64,7 @@ if st.button("predict"):
     ranges = np.linspace(0, predicted_value, n_colors+1)
     steps = [{'range':[ranges[i], ranges[i+1]], 'color': colors[i]} for i in range(n_colors)]
 
-    # إنشاء الـ Gauge
+ 
     fig_gauge = go.Figure(go.Indicator(
         mode="gauge+number",
         value=predicted_value,
@@ -79,4 +79,35 @@ if st.button("predict"):
     ))
 
     st.plotly_chart(fig_gauge)
+
+
+
+    st.write("---")
+    st.subheader("Key Factors Influencing Your Result")
+
+    if hasattr(model, 'feature_importances_'):
+         
+        importances = model.feature_importances_
+        
+       
+        feat_imp_df = pd.DataFrame({
+            'Feature': feature_names,
+            'Importance': importances
+        }).sort_values(by='Importance', ascending=True)
+
+       
+        fig_imp = px.bar(
+            feat_imp_df, 
+            x='Importance', 
+            y='Feature', 
+            orientation='h',
+            title="What weighed most in this prediction?",
+            color='Importance',
+            color_continuous_scale='Reds'
+        )
+        
+        fig_imp.update_layout(showlegend=False, height=400)
+        st.plotly_chart(fig_imp, use_container_width=True)
+    else:
+        st.info("Feature importance is not available for this model type.")
 
