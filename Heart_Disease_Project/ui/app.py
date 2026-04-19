@@ -97,14 +97,14 @@ if st.button("predict"):
             class_idx = 0 
             
             if isinstance(all_shap_values, list):
-                sv = all_shap_values[class_idx][0]
+                sv = np.array(all_shap_values[class_idx]).flatten()
                 expected_val = explainer.expected_value[class_idx]
             else:
-                sv = all_shap_values[0]
+                sv = np.array(all_shap_values[0]).flatten()
                 expected_val = explainer.expected_value
 
             if isinstance(expected_val, (np.ndarray, list)):
-                final_bv = float(expected_val[0])
+                final_bv = float(expected_val.flatten()[0])
             else:
                 final_bv = float(expected_val)
 
