@@ -86,50 +86,52 @@ if st.button("predict"):
     st.subheader("Deep Analysis: Why this result?")
 
     try:
-        with st.spinner('Deep Analysis in progress...'):
+        with st.spinner('Analyzing features impact...'):
             def model_predict(data):
-                temp_df = pd.DataFrame(data, columns=feature_names)
-                return model.predict_proba(temp_df)
+                return model.predict_proba(pd.DataFrame(data, columns=feature_names))
 
             explainer = shap.KernelExplainer(model_predict, input_df.values)
-            raw_shap_values = explainer.shap_values(input_df.values, nsamples=50)
+            raw_sv = explainer.shap_values(input_df.values, nsamples=50)
 
-            if isinstance(raw_shap_values, list):
-                sv = np.array(raw_shap_values[0]).flatten()
-                bv = float(np.array(explainer.expected_value).flatten()[0])
+            if isinstance(raw_sv, list):
+                sv = np.array(raw_sv[0]).flatten()
             else:
-                sv = np.array(raw_shap_values).flatten()
-                bv = float(np.array(explainer.expected_value).flatten()[0])
-
+                sv = np.array(raw_sv).flatten()
+            
             sv = np.nan_to_num(sv)
 
-            exp = shap.Explanation(
-                values=sv, 
-                base_values=bv, 
-                data=input_df.values.flatten(), 
-                feature_names=list(feature_names)
+            impact_df = pd.DataFrame({
+                'Feature': feature_names,
+                'Impact': sv
+            }).sort_values(by='Impact', ascending=True)
+
+            st.write("### 📊 Features Impact Analysis")
+            
+            fig_impact = px.bar(
+                impact_df, 
+                x='Impact', 
+                y='Feature', 
+                orientation='h',
+                color='Impact',
+                color_continuous_scale=['#0000ff', '#ffffff', '#ff0000'], 
+                color_continuous_midpoint=0,
+                labels={'Impact': 'Influence on Prediction'},
+                template='plotly_dark'
             )
 
-            st.write("### Impact Analysis: Why this result?")
+            fig_impact.update_layout(
+                showlegend=False,
+                height=450,
+                margin=dict(l=20, r=20, t=30, b=20)
+            )
             
-            import matplotlib.pyplot as plt
-            
-            plt.rcParams['figure.max_open_warning'] = 0 
-            fig = plt.figure(figsize=(10, 6), dpi=100) 
-            ax = fig.add_subplot(111)
+            st.plotly_chart(fig_impact, use_container_width=True)
 
-            shap.plots.waterfall(exp, show=False)
-            
-            plt.xlim(left=None, right=None) 
-            plt.tight_layout()
-            
-            st.pyplot(plt.gcf())
-            plt.clf()
-            plt.close('all')
+            st.info("""
+            **How to read this chart:**
+            - **Red Bars (Positive):** These factors INCREASED your heart disease risk score.
+            - **Blue Bars (Negative):** These factors DECREASED your risk (Protective factors).
+            """)
 
     except Exception as e:
-        st.error(f"Analysis system encountered a calculation limit. Result: {percent_sick:.2f}% risk.")
-        st.info("The prediction is accurate, but the visual chart couldn't be rendered for this specific data combination.")
-    except Exception as e:
-        st.error(f"Error: {e}")
-        st.write("Data Debug Info:", type(all_shap_values))
+        st.error(f"Visual analysis unavailable, but prediction is ready: {percent_sick:.2f}%")
