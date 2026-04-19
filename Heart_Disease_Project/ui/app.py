@@ -82,39 +82,43 @@ if st.button("predict"):
     st.plotly_chart(fig_gauge)
 
 
+    st.plotly_chart(fig_gauge)
 
-
-
-
-st.write("---")
-st.subheader("Deep Analysis: Why this result?")
-
-def st_shap(plot, height=None):
-    shap_html = f"<head>{shap.getjs()}</head><body>{plot.html()}</body>"
-    components.html(shap_html, height=height)
-
-try:
-    explainer = shap.KernelExplainer(model.predict_proba, input_df)
-    shap_values = explainer.shap_values(input_df)
-    idx_to_plot = 0 
-    st.write("The following chart shows how each factor pushed the probability:")
-
-    p = shap.force_plot(
-        explainer.expected_value[idx_to_plot], 
-        shap_values[idx_to_plot][0], 
-        input_df,
-        link="logit"
-    )
     
-    st_shap(p, height=150)
-    
-    st.info("""
-    **How to read this?**
-    - **Red bars:** Factors that increase heart disease risk.
-    - **Blue bars:** Factors that decrease risk (Protective factors).
-    - The longer the bar, the bigger the impact!
-    """)
+    st.write("---")
+    st.subheader("Deep Analysis: Why this result?")
 
-except Exception as e:
-    st.error(f"Could not calculate SHAP values: {e}")
-    st.info("SHAP requires 'shap' library. Install it using: pip install shap")
+    try:
+    
+        with st.spinner('Calculating impact of each factor... This may take a few seconds.'):
+            
+            explainer = shap.KernelExplainer(model.predict_proba, input_df)
+            shap_values = explainer.shap_values(input_df)
+        
+            
+            idx_to_plot = 0 
+            
+            st.write("The following chart shows how each factor pushed the probability:")
+            
+            p = shap.force_plot(
+                explainer.expected_value[idx_to_plot], 
+                shap_values[idx_to_plot][0] if isinstance(shap_values, list) else shap_values[0], 
+                input_df,
+                link="logit"
+            )
+            
+            
+            shap_html = f"<head>{shap.getjs()}</head><body>{p.html()}</body>"
+            components.html(shap_html, height=150)
+            
+            st.info("""
+            **How to read this?**
+            - **Red bars (Right):** Factors pushing towards a "Sick" prediction.
+            - **Blue bars (Left):** Factors pushing towards a "Safe" prediction.
+            - The values on the bars show your actual input.
+            """)
+
+    except Exception as e:
+        st.error(f"Could not calculate SHAP values: {e}")
+
+
