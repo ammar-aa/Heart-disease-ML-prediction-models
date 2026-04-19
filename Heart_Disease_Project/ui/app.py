@@ -130,18 +130,12 @@ if st.button("predict"):
             )
 
             fig_impact.update_traces(
-                texttemplate='%{x:.3f}', 
+                texttemplate='%{x:.4f}', 
                 textposition='outside',
                 cliponaxis=False
             )
             
             st.plotly_chart(fig_impact, use_container_width=True)
-
-            st.info("""
-            **How to read this chart:**
-            - **Red Bars (Positive):** These factors INCREASED your heart disease risk score.
-            - **Blue Bars (Negative):** These factors DECREASED your risk (Protective factors).
-            """)
 
     except Exception as e:
         st.error(f"Visual analysis unavailable, but prediction is ready: {percent_sick:.2f}%")
