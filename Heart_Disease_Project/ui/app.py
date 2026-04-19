@@ -121,8 +121,18 @@ if st.button("predict"):
 
             fig_impact.update_layout(
                 showlegend=False,
-                height=450,
-                margin=dict(l=20, r=20, t=30, b=20)
+                height=500,
+                xaxis_title="Influence Score (Strength of Factor)",
+                yaxis_title="Medical Features",
+                xaxis=dict(autorange=True, zeroline=True, zerolinewidth=2, zerolinecolor='White'),
+                margin=dict(l=20, r=20, t=30, b=20),
+                template='plotly_dark'
+            )
+
+            fig_impact.update_traces(
+                texttemplate='%{x:.3f}', 
+                textposition='outside',
+                cliponaxis=False
             )
             
             st.plotly_chart(fig_impact, use_container_width=True)
