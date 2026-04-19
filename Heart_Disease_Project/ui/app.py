@@ -92,39 +92,40 @@ if st.button("predict"):
                 return model.predict_proba(temp_df)
 
             explainer = shap.KernelExplainer(model_predict, input_df.values)
-            shap_values = explainer.shap_values(input_df.values)
             
+            all_shap_values = explainer.shap_values(input_df.values)
             
             class_idx = 0 
             
-          
-            if isinstance(shap_values, list):
-                current_shap_values = shap_values[class_idx][0]
-                base_value = explainer.expected_value[class_idx]
+            if isinstance(all_shap_values, list):
+                sv = all_shap_values[class_idx][0] 
+                bv = explainer.expected_value[class_idx]
             else:
-                current_shap_values = shap_values[0]
-                base_value = explainer.expected_value
+                sv = all_shap_values[0]
+                bv = explainer.expected_value
 
             st.write("How each factor pushed the probability:")
             
-          
+            
             p = shap.force_plot(
-                base_value, 
-                current_shap_values, 
-                input_df,
-                link="logit"
+                bv,          
+                sv,           
+                input_df,    
+                link="logit" 
             )
             
-         
+           
             shap_html = f"<head>{shap.getjs()}</head><body>{p.html()}</body>"
             components.html(shap_html, height=200)
             
             st.info("""
             **Explanation:**
-            - **Red values:** Factors pushing the prediction towards 'Sick'.
-            - **Blue values:** Factors pushing the prediction towards 'Safe'.
+            - **Red:** Factors pushing towards 'Sick'.
+            - **Blue:** Factors pushing towards 'Safe'.
             """)
 
+    except Exception as e:
+        st.error(f"Analysis Error: {e}")
     except Exception as e:
         st.error(f"Analysis Error: {e}")
 
