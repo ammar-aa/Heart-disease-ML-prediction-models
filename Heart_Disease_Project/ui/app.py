@@ -114,7 +114,7 @@ if st.button("predict"):
             )
             
             shap_html = f"<head>{shap.getjs()}</head><body>{p.html()}</body>"
-            components.html(shap_html, height=200)
+            components.html(shap_html, height=500)
             
             st.info("""
             **Explanation:**
