@@ -87,16 +87,17 @@ if st.button("predict"):
 
     try:
         with st.spinner('Calculating impact... This takes a moment for SVM models.'):
-            
-            
-            explainer = shap.KernelExplainer(model.predict_proba, input_df.values)
-            
-      
+            def model_predict(data):
+                temp_df = pd.DataFrame(data, columns=feature_names)
+                return model.predict_proba(temp_df)
+
+            explainer = shap.KernelExplainer(model_predict, input_df.values)
             shap_values = explainer.shap_values(input_df.values)
             
             
             class_idx = 0 
             
+          
             if isinstance(shap_values, list):
                 current_shap_values = shap_values[class_idx][0]
                 base_value = explainer.expected_value[class_idx]
@@ -106,24 +107,24 @@ if st.button("predict"):
 
             st.write("How each factor pushed the probability:")
             
-         
+          
             p = shap.force_plot(
                 base_value, 
                 current_shap_values, 
-                input_df, 
+                input_df,
                 link="logit"
             )
             
+         
             shap_html = f"<head>{shap.getjs()}</head><body>{p.html()}</body>"
             components.html(shap_html, height=200)
             
             st.info("""
-            **How to read this?**
-            - **Red:** Increases the risk score.
-            - **Blue:** Decreases the risk score.
+            **Explanation:**
+            - **Red values:** Factors pushing the prediction towards 'Sick'.
+            - **Blue values:** Factors pushing the prediction towards 'Safe'.
             """)
 
     except Exception as e:
         st.error(f"Analysis Error: {e}")
-
 
