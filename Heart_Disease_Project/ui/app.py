@@ -38,34 +38,43 @@ with col2:
     exang = st.selectbox("Exercise Angina (1:Y, 0:N)", [0, 1])
 
 if st.button("Predict"):
-    input_df = pd.DataFrame([{
-        "thal": thal, "ca": ca, "slope": slope, "thalach": thalach,
-        "exang": exang, "sex": sex, "oldpeak": oldpeak, "cp": cp, "age": age
-    }])[feature_names]
+    data_dict = {
+        "age": age,
+        "sex": sex,
+        "cp": cp,
+        "thalach": thalach,
+        "exang": exang,
+        "oldpeak": oldpeak,
+        "slope": slope,
+        "ca": ca,
+        "thal": thal
+    }
+    
+    input_df = pd.DataFrame([data_dict])[feature_names]
 
     proba = model.predict_proba(input_df)
     
-    percent_sick = proba[0][1] * 100  
+    percent_sick = proba[0][1] * 100
     percent_safe = proba[0][0] * 100
 
     if percent_sick > 50:
-        st.error(f"High Risk Detected: {percent_sick:.2f}%")
+        st.error(f"⚠️ High Risk Detected: {percent_sick:.2f}%")
     else:
-        st.success(f"Low Risk Score: {percent_safe:.2f}% safe")
+        st.success(f"✅ Low Risk Score: {percent_safe:.2f}% safe")
 
     fig_gauge = go.Figure(go.Indicator(
         mode="gauge+number",
-        value=percent_sick,  
-        number={'suffix': "%", 'font': {'size': 60}},
-        title={'text': "Heart Disease Risk Level", 'font': {'size': 24}},
+        value=percent_sick,
+        number={'suffix': "%"},
+        title={'text': "Danger Level"},
         gauge={
-            'axis': {'range': [0, 100], 'ticksuffix': "%"},
-            'bar': {'color': "white"}, 
+            'axis': {'range': [0, 100]},
             'steps': [
-                {'range': [0, 30], 'color': "#00ff00"},
-                {'range': [30, 70], 'color': "#ffff00"},
-                {'range': [70, 100], 'color': "#ff0000"}
-            ]
+                {'range': [0, 30], 'color': "green"},
+                {'range': [30, 70], 'color': "yellow"},
+                {'range': [70, 100], 'color': "red"}
+            ],
+            'bar': {'color': "black"}
         }
     ))
     st.plotly_chart(fig_gauge)
