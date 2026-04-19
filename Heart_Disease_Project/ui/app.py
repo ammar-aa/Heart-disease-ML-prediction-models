@@ -85,7 +85,7 @@ if st.button("predict"):
     st.write("---")
     st.subheader("Deep Analysis: Why this result?")
 
-  try:
+    try:
         with st.spinner('Calculating impact... This takes a moment for SVM models.'):
             
             
