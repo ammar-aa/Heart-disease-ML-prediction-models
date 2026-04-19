@@ -87,39 +87,54 @@ if st.button("predict"):
 
     try:
         with st.spinner('Calculating impact... This takes a moment for SVM models.'):
+            # 1. الدالة الوسيطة للـ Pipeline
             def model_predict(data):
                 temp_df = pd.DataFrame(data, columns=feature_names)
                 return model.predict_proba(temp_df)
 
+            # 2. تعريف الـ Explainer وحساب القيم
             explainer = shap.KernelExplainer(model_predict, input_df.values)
-            
             all_shap_values = explainer.shap_values(input_df.values, nsamples=100)
             
+            # 3. استخراج القيم للفئة المطلوبة (Sick)
             class_idx = 0 
-            
             if isinstance(all_shap_values, list):
-                sv = all_shap_values[class_idx]
+                sv = all_shap_values[class_idx][0]
                 bv = explainer.expected_value[class_idx]
             else:
-                sv = all_shap_values[:, :, class_idx]
-                bv = explainer.expected_value[class_idx]
+                sv = all_shap_values[0]
+                bv = explainer.expected_value
 
-            st.write("How each factor pushed the probability:")
+            st.write("### Impact Analysis (Why this result?)")
+
+            # 4. رسم الـ Waterfall Plot باستخدام Matplotlib
+            import matplotlib.pyplot as plt
             
-            p = shap.force_plot(
+            fig, ax = plt.subplots(figsize=(10, 6))
+            
+            # رسم الشلال (البارات)
+            shap.plots._waterfall.waterfall_legacy(
                 bv, 
                 sv, 
-                input_df,
-                link="logit" 
+                feature_names=feature_names.tolist() if hasattr(feature_names, 'tolist') else feature_names,
+                max_display=10,
+                show=False
             )
             
-            shap_html = f"<head>{shap.getjs()}</head><body>{p.html()}</body>"
-            components.html(shap_html, height=500)
+            # تحسين شكل الرسمة قبل العرض
+            plt.tight_layout()
             
+            # عرض الرسمة كصورة ثابتة في Streamlit
+            st.pyplot(fig)
+            
+            # تنظيف الذاكرة
+            plt.close(fig)
+
             st.info("""
-            **Explanation:**
-            - **Red:** Factors pushing towards 'Sick'.
-            - **Blue:** Factors pushing towards 'Safe'.
+            **How to read this chart:**
+            - **Red bars (Right):** Factors that increased the disease probability.
+            - **Blue bars (Left):** Factors that decreased the risk.
+            - The length of the bar represents the strength of the factor's impact.
             """)
 
     except Exception as e:
