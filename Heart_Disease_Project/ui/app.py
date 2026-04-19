@@ -86,16 +86,16 @@ if st.button("predict"):
     st.subheader("Deep Analysis: Why this result?")
 
     try:
-        with st.spinner('Calculating impact... This takes a moment.'):
+        with st.spinner('Calculating impact...'):
             def model_predict(data):
                 temp_df = pd.DataFrame(data, columns=feature_names)
                 return model.predict_proba(temp_df)
 
             explainer = shap.KernelExplainer(model_predict, input_df.values)
-            all_shap_values = explainer.shap_values(input_df.values, nsamples=100)
+            all_shap_values = explainer.shap_values(input_df.values, nsamples=50)
             
             
-            if isinstance(all_shap_values, list) and len(all_shap_values) > 0:
+            if isinstance(all_shap_values, list):
                 sv = np.array(all_shap_values[0]).flatten()
             else:
                 sv = np.array(all_shap_values).flatten()
@@ -127,9 +127,10 @@ if st.button("predict"):
 
             st.info("""
             **How to read this chart:**
-            - **Red bars:** Increased the risk.
-            - **Blue bars:** Decreased the risk.
+            - **Red (Right):** Factor increased the risk.
+            - **Blue (Left):** Factor decreased the risk.
             """)
 
     except Exception as e:
-        st.error(f"Analysis Error Details: {e}")
+        st.error(f"Error: {e}")
+        st.write("Data Debug Info:", type(all_shap_values))
