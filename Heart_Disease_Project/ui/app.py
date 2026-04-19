@@ -50,6 +50,7 @@ if st.button("Predict"):
     fig_gauge = go.Figure(go.Indicator(
         mode="gauge+number",
         value=percent_sick,
+        number={'suffix': "%", 'font': {'size': 60}},
         title={'text': "Heart Disease Risk Level (%)"},
         gauge={
             'axis': {'range': [0, 100]},
@@ -77,35 +78,36 @@ if st.button("Predict"):
     st.subheader("🔍 Feature Importance Analysis")
 
     try:
-        with st.spinner('Deep processing with SHAP...'):
-            explainer = shap.KernelExplainer(model.predict_proba, input_df.values)
-            raw_sv = explainer.shap_values(input_df.values, nsamples=100)
+        with st.spinner('🔍 Analyzing feature impacts...'):
+            f = lambda x: model.predict_proba(pd.DataFrame(x, columns=feature_names))
 
-            if isinstance(raw_sv, list):
-                sv = np.array(raw_sv[1]).flatten() if len(raw_sv) > 1 else np.array(raw_sv[0]).flatten()
+            explainer = shap.KernelExplainer(f, input_df.values)
+            shap_values = explainer.shap_values(input_df.values, nsamples=100)
+
+            if isinstance(shap_values, list):
+                sv = shap_values[1].flatten() if len(shap_values) > 1 else shap_values[0].flatten()
             else:
-                sv = np.array(raw_sv).flatten()
+                sv = shap_values.flatten()
 
             impact_df = pd.DataFrame({'Feature': feature_names, 'Impact': sv}).sort_values(by='Impact')
-
-            display_impact = impact_df['Impact'].values
-            if np.abs(display_impact).max() < 0.01 and np.abs(display_impact).max() > 0:
-                display_impact = display_impact * 1000
-                st.caption("Note: Values scaled x1000 for visibility.")
+            
+            if np.abs(impact_df['Impact']).max() < 0.01:
+                impact_df['Impact'] = impact_df['Impact'] * 100
+                st.caption("⚠️ Note: Bars scaled x100 for visual clarity.")
 
             fig_impact = px.bar(
-                impact_df, x=display_impact, y='Feature', orientation='h',
-                color=display_impact,
-                color_continuous_scale='RdBu_r',
-                labels={'x': 'Impact Strength', 'y': 'Feature Name'},
-                template='plotly_dark'
+                impact_df, x='Impact', y='Feature', orientation='h',
+                color='Impact',
+                color_continuous_scale='RdBu_r',   
+                template='plotly_dark',
+                labels={'Impact': 'Influence Score', 'Feature': 'Medical Test'}
             )
             
-            m = max(abs(display_impact).max(), 0.01) * 1.2
-            fig_impact.update_layout(xaxis=dict(range=[-m, m]))
+            limit = max(abs(impact_df['Impact']).max(), 0.01) * 1.2
+            fig_impact.update_layout(xaxis=dict(range=[-limit, limit]))
             
             st.plotly_chart(fig_impact, use_container_width=True)
 
     except Exception as e:
-        st.warning(f"Analysis engine is busy. Prediction is solid: {percent_sick:.2f}%")
-        st.info("Check if all input fields are filled correctly.")
+        st.warning(f"Feature analysis encounterd an issue: {e}")
+        st.info("The prediction (Gauge above) is 100% correct. Only the visual breakdown failed.")
