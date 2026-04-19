@@ -54,8 +54,8 @@ if st.button("Predict"):
 
     proba = model.predict_proba(input_df)
     
-    percent_sick = proba[0][1] * 100
-    percent_safe = proba[0][0] * 100
+    percent_sick = proba[0][0] * 100
+    percent_safe = proba[0][1] * 100
 
     if percent_sick > 50:
         st.error(f"⚠️ High Risk Detected: {percent_sick:.2f}%")
