@@ -73,17 +73,23 @@ if st.button("Predict & Analyze"):
             raw_sv = explainer.shap_values(input_df.values, nsamples=50)
 
             if isinstance(raw_sv, list):
-                sv = np.array(raw_sv[0]).flatten()
+                sv_0 = np.array(raw_sv[0]).flatten()
+                sv_1 = np.array(raw_sv[1]).flatten() if len(raw_sv) > 1 else sv_0
+                sv = sv_1 if np.abs(sv_1).sum() > np.abs(sv_0).sum() else sv_0
             else:
                 sv = np.array(raw_sv).flatten()
             
             sv = np.nan_to_num(sv)
 
+            display_sv = sv.copy()
+            if 0 < np.abs(sv).max() < 0.01:
+                display_sv = sv * 1000
+                st.caption("Note: Values scaled x1000 for visibility")
+
             impact_df = pd.DataFrame({
                 'Feature': feature_names,
-                'Impact': sv
+                'Impact': display_sv
             }).sort_values(by='Impact', ascending=True)
-
             max_val = max(abs(impact_df['Impact'].max()), abs(impact_df['Impact'].min()))
             limit = max_val * 1.3 if max_val > 0 else 0.1
 
