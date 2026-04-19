@@ -44,13 +44,15 @@ if st.button("predict"):
     # Prediction
     pred = model.predict(input_df)
     proba = model.predict_proba(input_df)
-    predicted_value = proba[0][1]*100   
+    percent_safe = proba[0][1] * 100
+    percent_sick = proba[0][0] * 100
 
-    if pred[0] == 1:
-        st.error(f" You have {predicted_value:.2f}% chance of being heart patient")
+    if percent_sick > 50:
+        st.error(f"You have {percent_sick:.2f}% chance of being a heart patient")
+        predicted_value = percent_sick # عشان الـ Gauge يقرأ نسبة المرض
     else:
-        st.success(f" You are {proba[0][0]*100:.2f}% safe from heart diseases")
-
+        st.success(f"You are {percent_safe:.2f}% safe from heart diseases")
+        predicted_value = percent_sick # برضه خليه يقرأ نسبة المرض عشان الـ Gauge يفضل منطقي
     # gauge meter for sickness percentage
     n_colors = 1000
     cmap = cm.get_cmap('jet', n_colors)
