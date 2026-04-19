@@ -83,38 +83,38 @@ if st.button("predict"):
 
 
 
-    st.write("---")
-    st.subheader("Key Factors Influencing Your Result")
+   import shap
+import streamlit.components.v1 as components
 
-    importances = None
+st.write("---")
+st.subheader("Deep Analysis: Why this result?")
 
+def st_shap(plot, height=None):
+    shap_html = f"<head>{shap.getjs()}</head><body>{plot.html()}</body>"
+    components.html(shap_html, height=height)
+
+try:
+    explainer = shap.KernelExplainer(model.predict_proba, input_df)
+    shap_values = explainer.shap_values(input_df)
+    idx_to_plot = 0 
+    st.write("The following chart shows how each factor pushed the probability:")
+
+    p = shap.force_plot(
+        explainer.expected_value[idx_to_plot], 
+        shap_values[idx_to_plot][0], 
+        input_df,
+        link="logit"
+    )
     
-    if hasattr(model, 'coef_'):
-        importances = np.abs(model.coef_[0])
+    st_shap(p, height=150)
     
-    
-    else:
-        st.info("Feature importance is being calculated based on model weights...")
-        pass
+    st.info("""
+    **How to read this?**
+    - **Red bars:** Factors that increase heart disease risk.
+    - **Blue bars:** Factors that decrease risk (Protective factors).
+    - The longer the bar, the bigger the impact!
+    """)
 
-    if importances is not None:
-        feat_imp_df = pd.DataFrame({
-            'Feature': feature_names,
-            'Importance': importances
-        }).sort_values(by='Importance', ascending=True)
-
-        fig_imp = px.bar(
-            feat_imp_df, 
-            x='Importance', 
-            y='Feature', 
-            orientation='h',
-            title="Importance of each factor (SVM Weights)",
-            color='Importance',
-            color_continuous_scale='Bluered'
-        )
-        
-        fig_imp.update_layout(showlegend=False, height=450)
-        st.plotly_chart(fig_imp, use_container_width=True)
-    else:
-        st.warning("Feature importance is tricky with RBF SVM kernel, but it's working behind the scenes!")
-
+except Exception as e:
+    st.error(f"Could not calculate SHAP values: {e}")
+    st.info("SHAP requires 'shap' library. Install it using: pip install shap")
