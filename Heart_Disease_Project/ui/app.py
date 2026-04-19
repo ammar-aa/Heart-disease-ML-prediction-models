@@ -86,50 +86,45 @@ if st.button("predict"):
     st.subheader("Deep Analysis: Why this result?")
 
     try:
-        with st.spinner('Calculating impact...'):
+        with st.spinner('Deep Analysis in progress...'):
             def model_predict(data):
                 temp_df = pd.DataFrame(data, columns=feature_names)
                 return model.predict_proba(temp_df)
 
             explainer = shap.KernelExplainer(model_predict, input_df.values)
-            all_shap_values = explainer.shap_values(input_df.values, nsamples=50)
+            raw_shap_values = explainer.shap_values(input_df.values, nsamples=50)
+
+            try:
+                if isinstance(raw_shap_values, list):
+                    sv = np.array(raw_shap_values[0]).flatten()
+                    bv = float(np.array(explainer.expected_value)[0])
+                else:
+                    sv = np.array(raw_shap_values).flatten()
+                    bv = float(explainer.expected_value)
+            except:
+                sv = np.atleast_1d(np.squeeze(raw_shap_values))[:len(feature_names)]
+                bv = float(np.array(explainer.expected_value).flatten()[0])
+
+            exp = shap.Explanation(
+                values=sv, 
+                base_values=bv, 
+                data=input_df.values.flatten(), 
+                feature_names=list(feature_names)
+            )
+
+            st.write("### Impact Analysis: Why this result?")
             
-            
-            if isinstance(all_shap_values, list):
-                sv = np.array(all_shap_values[0]).flatten()
-            else:
-                sv = np.array(all_shap_values).flatten()
-
-            ev = explainer.expected_value
-            if isinstance(ev, (list, np.ndarray)):
-                final_bv = float(ev[0])
-            else:
-                final_bv = float(ev)
-
-            st.write("### Impact Analysis (Why this result?)")
-
             import matplotlib.pyplot as plt
             fig, ax = plt.subplots(figsize=(10, 6))
             
-            f_names = feature_names.tolist() if hasattr(feature_names, 'tolist') else list(feature_names)
-
-            shap.plots._waterfall.waterfall_legacy(
-                final_bv, 
-                sv, 
-                feature_names=f_names,
-                max_display=10,
-                show=False
-            )
+            shap.plots.waterfall(exp, show=False)
             
             plt.tight_layout()
             st.pyplot(fig)
             plt.close(fig)
 
-            st.info("""
-            **How to read this chart:**
-            - **Red (Right):** Factor increased the risk.
-            - **Blue (Left):** Factor decreased the risk.
-            """)
+    except Exception as e:
+        st.error(f"Analysis system is temporarily unavailable. Error: {e}")
 
     except Exception as e:
         st.error(f"Error: {e}")
