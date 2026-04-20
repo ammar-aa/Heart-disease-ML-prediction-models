@@ -14,10 +14,10 @@ st.write("Enter the patient data to analyze risk level:")
 
 col1, col2 = st.columns(2)
 with col1:
-    age = st.number_input("Age", 35, 110, 50)
+    age = st.number_input("Age",0 , 110, 50)
     sex = st.selectbox("Sex (Male=1, Female=0)", [1, 0])
-    trestbps = st.number_input("Resting Blood Pressure (mm Hg)", 80, 200, 120)
-    thalach = st.number_input("Max Heart Rate achieved during exercise", 60, 220, 120)
+    trestbps = st.number_input("Resting Blood Pressure (mm Hg)", 0, 1000, 120)
+    thalach = st.number_input("Max Heart Rate achieved during exercise", 0, 1000, 120)
     cp = st.selectbox("Chest Pain Type (0:Typical angina,1:Atypical angina,2:Non-anginal pain,3:Asymptomatic)",[0, 1, 2, 3])
 
 with col2:
