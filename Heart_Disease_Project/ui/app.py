@@ -6,7 +6,7 @@ import matplotlib.cm as cm
 import numpy as np
 import plotly.graph_objects as go
 
-model, feature_names = joblib.load("heart_model.pkl")
+model, feature_names = joblib.load("Heart_Disease_Project/ui/heart_model.pkl")
 
 st.set_page_config(page_title="Heart Disease Check-up", layout="centered")
 st.title("❤️ AI Heart Disease Prediction")
