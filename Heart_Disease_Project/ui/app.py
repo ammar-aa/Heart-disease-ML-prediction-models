@@ -21,7 +21,7 @@ with col1:
     cp = st.selectbox("Chest Pain Type (0:Typical angina,1:Atypical angina,2:Non-anginal pain,3:Asymptomatic)",[0, 1, 2, 3])
 
 with col2:
-    oldpeak = st.number_input("ST depression induced by exercise relative to rest", 0.0, 6.5, 1.0)
+    oldpeak = st.number_input("ST depression induced by exercise relative to rest", 0.0, 10.0, 1.0)
     ca = st.slider("Major Vessels (ca)", 0, 3, 0)
     exang = st.selectbox("Exercise Induced Angina (1=Yes, 0=No)", [0, 1])
     thal = st.selectbox("Thalassemia(1:Normal,2:Fixed defect,3:Reversible defect)", [1, 2, 3])
